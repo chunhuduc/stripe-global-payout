@@ -44,7 +44,7 @@ Default local base: `http://localhost:3000`. Admin routes require `X-Admin-Key` 
 
 ### curl examples
 
-Replace `BASE` with `http://localhost:3000` or `https://your-project.vercel.app`.
+Use `http://localhost:3000` locally or `https://aaron-stripe-payout-api.vercel.app` in production (`BASE` below).
 
 Root or health:
 
@@ -94,7 +94,7 @@ Stripe webhooks (local):
 stripe listen --forward-to localhost:3000/webhooks/stripe
 ```
 
-Production webhook URL: `https://<project>.vercel.app/webhooks/stripe`
+Production webhook URL: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
 
 ## Repo layout
 

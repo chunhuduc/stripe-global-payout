@@ -4,7 +4,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "https://your-project.vercel.app" },
+    { "key": "baseUrl", "value": "https://aaron-stripe-payout-api.vercel.app" },
     { "key": "adminKey", "value": "change-me-in-production" },
     { "key": "payeeId", "value": "" }
   ],

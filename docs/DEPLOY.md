@@ -34,7 +34,7 @@ npm run migrate
 | `ADMIN_API_KEY` | Strong secret for `X-Admin-Key` |
 | `NODE_ENV` | `production` |
 
-4. Deploy. `buildCommand` runs `npm run build` (required so `apps/api/dist` exists). API base: `https://<project>.vercel.app`
+4. Deploy. `buildCommand` runs `npm run build` (required so `apps/api/dist` exists). API base: `https://aaron-stripe-payout-api.vercel.app`
 
 If deploy fails with "default export must be a function or server", confirm `api/index.ts` re-exports `apps/api/dist/app.js` (default Express app) and redeploy after `npm run build` succeeds locally.
 
@@ -42,7 +42,7 @@ If deploy fails with "default export must be a function or server", confirm `api
 
 In **Stripe Dashboard → Developers → Webhooks (test mode)**:
 
-- Endpoint: `https://<project>.vercel.app/webhooks/stripe`
+- Endpoint: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
 - Events: `payout.paid`, `payout.failed`
 - Copy signing secret → `STRIPE_WEBHOOK_SECRET` in Vercel, redeploy if needed
 

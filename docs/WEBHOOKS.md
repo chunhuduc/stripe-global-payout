@@ -29,7 +29,7 @@ Stripe may retry the same event. Before handling:
 
 In Stripe Dashboard (test mode for M1):
 
-- URL: `https://<your-project>.vercel.app/webhooks/stripe`
+- URL: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
 - Events: `payout.paid`, `payout.failed`
 - Signing secret → `STRIPE_WEBHOOK_SECRET` on Vercel
 

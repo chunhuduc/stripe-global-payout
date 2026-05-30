@@ -33,5 +33,5 @@
 - [ ] `npm run build` passes locally
 - [ ] Create payee returns Stripe account id
 - [ ] Initiate payout returns transfer and payout ids
-- [ ] Stripe webhook endpoint points to `https://<project>.vercel.app/webhooks/stripe`
+- [ ] Stripe webhook endpoint points to `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
 - [ ] Webhook updates payout status; duplicate `event.id` handled
