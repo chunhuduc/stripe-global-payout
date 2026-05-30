@@ -2,20 +2,84 @@
 
 ## Overview
 
+Production API: `https://aaron-stripe-payout-api.vercel.app`
+
+### System map
+
+Left to right: who calls the API, what it talks to, how Stripe calls back.
+
+```mermaid
+flowchart LR
+  Admin["Admin\nPostman / curl"]
+  API["Express API\nVercel"]
+  Neon[("Neon\nPostgres")]
+  Stripe["Stripe\nConnect"]
+
+  Admin -->|"X-Admin-Key"| API
+  API <-->|"read / write"| Neon
+  API <-->|"API calls"| Stripe
+  Stripe -.->|"webhooks"| API
 ```
-Admin client (curl / Postman / future web UI)
-        |
-        v
-   Express API (apps/api)  -->  Vercel serverless (api/index.ts)
-        |
-   +----+----+
-   |         |
-   v         v
- Neon       Stripe Connect Custom
- Postgres   (accounts, transfers, payouts)
-        |
-        v
-   POST /webhooks/stripe  -->  update payout rows, dedupe by event_id
+
+| Piece | Role |
+| ----- | ---- |
+| Admin | Creates payees and starts payouts (no Stripe login for payees) |
+| Express API | `apps/api`, entry `api/index.ts` on Vercel |
+| Neon | `payees`, `payouts`, `stripe_webhook_events` |
+| Stripe | Custom accounts, transfer, payout, webhook events |
+
+### API routes (phase 1)
+
+```mermaid
+flowchart LR
+  subgraph public [No auth]
+    H["GET /\nGET /health"]
+  end
+  subgraph admin [X-Admin-Key]
+    P1["POST /api/payees"]
+    P2["POST /api/payouts"]
+  end
+  subgraph stripe [Stripe signature]
+    W["POST /webhooks/stripe"]
+  end
+```
+
+### Flow A: Create payee
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Admin
+  participant API as API
+  participant Stripe
+  participant DB as Neon
+
+  Admin->>API: POST /api/payees
+  API->>Stripe: Custom account + bank
+  Stripe-->>API: account id
+  API->>DB: insert payee
+  API-->>Admin: payee id
+```
+
+### Flow B: Payout + status
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Admin
+  participant API as API
+  participant Stripe
+  participant DB as Neon
+
+  Admin->>API: POST /api/payouts
+  API->>Stripe: transfer to connected account
+  API->>Stripe: payout to bank
+  API->>DB: insert payout (pending)
+  API-->>Admin: payout ids
+
+  Note over Stripe,API: Later, async
+  Stripe->>API: payout.paid or payout.failed
+  API->>DB: dedupe event.id, update status
 ```
 
 ## Runtime
