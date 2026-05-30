@@ -1,0 +1,17 @@
+{
+  "name": "aaron-stripe-payout",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @aaron-payout/api",
+    "build": "npm run build -w @aaron-payout/api",
+    "migrate": "npm run migrate -w @aaron-payout/api",
+    "start": "npm run start -w @aaron-payout/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
