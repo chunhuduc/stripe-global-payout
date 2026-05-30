@@ -11,10 +11,10 @@ See [docs/DEPLOY.md](docs/DEPLOY.md) for full setup.
 
 ## Quick start (local)
 
-1. Copy env and set Stripe + Neon URLs:
+1. Copy env and set Stripe + Neon URLs (use **`.env.local`** for secrets):
 
    ```bash
-   cp .env.example .env
+   cp .env.example .env.local
    ```
 
 2. Install and migrate:
@@ -36,6 +36,7 @@ Default local base: `http://localhost:3000`. Admin routes require `X-Admin-Key` 
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
+| GET | `/` | None | Service info + endpoint map (same payload as `/health`) |
 | GET | `/health` | None | Liveness check |
 | POST | `/api/payees` | `X-Admin-Key` | Create Connect Custom payee (Jordan `JO` in phase 1) |
 | POST | `/api/payouts` | `X-Admin-Key` | Transfer to connected account and create payout |
@@ -45,9 +46,10 @@ Default local base: `http://localhost:3000`. Admin routes require `X-Admin-Key` 
 
 Replace `BASE` with `http://localhost:3000` or `https://your-project.vercel.app`.
 
-Health:
+Root or health:
 
 ```bash
+curl -s "$BASE/"
 curl -s "$BASE/health"
 ```
 

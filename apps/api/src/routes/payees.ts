@@ -3,6 +3,7 @@ import { requireAdmin } from "../middleware/adminAuth.js";
 import { createPayee } from "../services/payeeService.js";
 import type { CreatePayeeInput } from "../config/countries/types.js";
 
+/** Admin-only: create Connect Custom payee + bank (no recipient Stripe login). */
 export const payeesRouter = Router();
 
 payeesRouter.post("/", requireAdmin, async (req, res) => {

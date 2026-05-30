@@ -29,6 +29,7 @@ export async function createCustomConnectedAccount(
     capabilities: {
       transfers: { requested: true },
     },
+    // M1/test: platform records acceptance; production should use real IP and onboarding flow.
     tos_acceptance: {
       date: now,
       ip: "127.0.0.1",
@@ -53,6 +54,7 @@ export async function attachBankAccount(
       currency,
       account_holder_name: bank.accountHolderName,
       account_holder_type: "individual",
+      // Stripe cross-border: routing_number holds SWIFT/BIC; account_number holds IBAN.
       routing_number: bank.swift,
       account_number: bank.iban,
     },

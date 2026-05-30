@@ -6,6 +6,9 @@ import {
   createCustomConnectedAccount,
 } from "../stripe/accounts.js";
 
+/**
+ * Onboard a payee: Custom connected account + external bank, then store Stripe ids locally.
+ */
 export async function createPayee(input: CreatePayeeInput) {
   const country = getCountryConfig(input.countryCode);
 
@@ -36,6 +39,7 @@ export async function createPayee(input: CreatePayeeInput) {
       country.code,
       account.id,
       input.individual.email,
+      // New Custom accounts are often "restricted" until requirements are met; normal in test mode.
       account.charges_enabled ? "active" : "restricted",
     ],
   );

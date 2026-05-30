@@ -6,11 +6,16 @@ import { transferAndPayout } from "../stripe/payouts.js";
 
 export interface InitiatePayoutInput {
   payeeId: string;
+  /** Minor units (Stripe integer amount). */
   amount: number;
   currency?: string;
   transferCurrency?: string;
 }
 
+/**
+ * Admin-initiated payout: fund connected account, create payout, persist pending row.
+ * Final status arrives via payout.paid / payout.failed webhooks.
+ */
 export async function initiatePayout(input: InitiatePayoutInput) {
   const payee = await getPayeeById(input.payeeId);
   if (!payee) {

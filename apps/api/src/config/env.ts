@@ -1,15 +1,6 @@
-import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { loadProjectEnv } from "./loadEnv.js";
 
-const rootDir = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../../..",
-);
-
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config({ path: path.join(rootDir, ".env") });
-}
+loadProjectEnv();
 
 function required(name: string): string {
   const value = process.env[name];

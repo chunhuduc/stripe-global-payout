@@ -3,7 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
-import { env } from "../config/env.js";
+import { loadProjectEnv } from "../config/loadEnv.js";
+
+loadProjectEnv();
 
 if (typeof globalThis.WebSocket === "undefined") {
   neonConfig.webSocketConstructor = ws;
@@ -12,8 +14,20 @@ if (typeof globalThis.WebSocket === "undefined") {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsDir = path.join(__dirname, "migrations");
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Missing ${name}. Set it in .env.local or .env at the repo root.`,
+    );
+  }
+  return value;
+}
+
 async function migrate() {
-  const connectionString = env.databaseUrlUnpooled || env.databaseUrl;
+  const connectionString =
+    process.env.DATABASE_URL_UNPOOLED ??
+    requireEnv("DATABASE_URL");
   const pool = new Pool({ connectionString });
 
   const files = fs

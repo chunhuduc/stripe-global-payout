@@ -1,6 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
 
+/**
+ * M1 admin gate: shared secret header until phase 2 UI auth (session, OAuth, etc.).
+ */
 export function requireAdmin(
   req: Request,
   res: Response,

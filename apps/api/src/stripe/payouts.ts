@@ -3,8 +3,10 @@ import { stripe } from "./client.js";
 
 export interface TransferAndPayoutParams {
   connectedAccountId: string;
+  /** Amount in minor units (e.g. 1000 = 10.00 in that currency). */
   amount: number;
   currency: string;
+  /** Platform balance currency for the transfer step (often usd if platform holds USD). */
   transferCurrency?: string;
   idempotencyKey?: string;
 }
@@ -15,8 +17,10 @@ export interface TransferAndPayoutResult {
 }
 
 /**
- * Fund connected account balance, then payout to recipient bank.
- * Platform balance must cover the transfer (top up in Stripe test Dashboard).
+ * Two-step payout on Connect:
+ * 1) Transfer from platform balance to the connected account.
+ * 2) Payout from connected account to the payee bank.
+ * Platform test balance must be topped up before step 1 (Stripe Dashboard).
  */
 export async function transferAndPayout(
   params: TransferAndPayoutParams,

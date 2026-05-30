@@ -3,6 +3,7 @@ import { env } from "../config/env.js";
 import { query } from "../db/client.js";
 import { stripe } from "../stripe/client.js";
 
+/** Phase 1 scope: payout status only (add account.updated in phase 2 for onboarding UX). */
 const HANDLED_EVENTS = new Set(["payout.paid", "payout.failed"]);
 
 export function constructStripeEvent(
@@ -17,7 +18,8 @@ export function constructStripeEvent(
 }
 
 /**
- * Insert event.id once; return false if duplicate (Stripe retry).
+ * Persist Stripe event.id before side effects.
+ * Returns false on duplicate (Postgres 23505) so retries are acknowledged without re-running updates.
  */
 export async function recordWebhookEvent(
   event: Stripe.Event,
@@ -38,6 +40,7 @@ export async function recordWebhookEvent(
   }
 }
 
+/** Sync payout row status from Stripe webhook payload (matched by stripe_payout_id). */
 export async function handleStripeWebhook(event: Stripe.Event): Promise<void> {
   if (!HANDLED_EVENTS.has(event.type)) {
     return;

@@ -14,8 +14,8 @@ No Docker. Postgres runs on **Neon** (free tier). API runs on **Vercel** (Hobby/
 From your machine with env set:
 
 ```bash
-cp .env.example .env
-# fill DATABASE_URL and DATABASE_URL_UNPOOLED (or use same URL for both on free tier)
+cp .env.example .env.local
+# fill DATABASE_URL and DATABASE_URL_UNPOOLED (migrate loads .env.local from repo root)
 npm install
 npm run migrate
 ```

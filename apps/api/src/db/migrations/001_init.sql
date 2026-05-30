@@ -1,3 +1,5 @@
+-- Phase 1 schema: payees (Connect accounts), payouts (transfer + payout ids), webhook dedupe log.
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS payees (
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS payouts (
 CREATE INDEX IF NOT EXISTS idx_payouts_payee_id ON payouts(payee_id);
 CREATE INDEX IF NOT EXISTS idx_payouts_stripe_payout_id ON payouts(stripe_payout_id);
 
+-- event_id = Stripe event.id (unique) prevents double-processing webhook retries
 CREATE TABLE IF NOT EXISTS stripe_webhook_events (
   event_id VARCHAR(255) PRIMARY KEY,
   type VARCHAR(128) NOT NULL,

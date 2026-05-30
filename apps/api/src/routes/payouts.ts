@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { initiatePayout } from "../services/payoutService.js";
 
+/** Admin-only: transfer + payout to a payee's connected account and bank. */
 export const payoutsRouter = Router();
 
 payoutsRouter.post("/", requireAdmin, async (req, res) => {

@@ -10,6 +10,13 @@
   ],
   "item": [
     {
+      "name": "Root",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/"
+      }
+    },
+    {
       "name": "Health",
       "request": {
         "method": "GET",

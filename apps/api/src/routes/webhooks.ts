@@ -8,6 +8,10 @@ import {
 
 export const webhooksRouter = Router();
 
+/**
+ * Stripe platform webhooks (configure payout.paid and payout.failed in Dashboard).
+ * No admin key: authenticity is the Stripe-Signature header + STRIPE_WEBHOOK_SECRET.
+ */
 webhooksRouter.post(
   "/stripe",
   express.raw({ type: "application/json" }),
@@ -22,6 +26,7 @@ webhooksRouter.post(
       const rawBody = req.body as Buffer;
       const event = constructStripeEvent(rawBody, signature);
 
+      // Dedupe by event.id so Stripe retries do not double-update payout rows.
       const isNew = await recordWebhookEvent(event);
       if (!isNew) {
         res.json({ received: true, duplicate: true });
