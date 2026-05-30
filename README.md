@@ -38,9 +38,12 @@ Default local base: `http://localhost:3000`. Admin routes require `X-Admin-Key` 
 |--------|------|------|-------------|
 | GET | `/` | None | Service info + endpoint map (same payload as `/health`) |
 | GET | `/health` | None | Liveness check |
-| POST | `/api/payees` | `X-Admin-Key` | Create Connect Custom payee (Jordan `JO` in phase 1) |
+| POST | `/api/payees` | `X-Admin-Key` | Save freelancer + bank (`name` + `bank`, or `individual` + `bank`) |
 | POST | `/api/payouts` | `X-Admin-Key` | Transfer to connected account and create payout |
-| POST | `/webhooks/stripe` | Stripe signature | `payout.paid` / `payout.failed` (deduped by `event.id`) |
+| GET | `/api/payouts/:id` | `X-Admin-Key` | Payout status (`status`, `transfer_status`) |
+| POST | `/webhooks/stripe` | Stripe signature | `transfer.*` + `payout.*` (deduped by `event.id`) |
+
+**Trial demo:** import [`postman/trial-mini-flow.json`](postman/trial-mini-flow.json) (3 requests).
 
 ### curl examples
 
@@ -53,7 +56,20 @@ curl -s "$BASE/"
 curl -s "$BASE/health"
 ```
 
-Create Jordan payee:
+Create payee (trial-style `name` + bank):
+
+```bash
+curl -s -X POST "$BASE/api/payees" \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: $ADMIN_API_KEY" \
+  -d '{
+    "name": "Jane Doe",
+    "email": "jane@example.test",
+    "bank": { "iban": "JO32...", "swift": "AAAajoJOXXX" }
+  }'
+```
+
+Create payee (full body, Jordan):
 
 ```bash
 curl -s -X POST "$BASE/api/payees" \

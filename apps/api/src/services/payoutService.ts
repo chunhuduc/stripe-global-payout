@@ -37,8 +37,8 @@ export async function initiatePayout(input: InitiatePayoutInput) {
   const result = await query(
     `INSERT INTO payouts (
        payee_id, stripe_payout_id, stripe_transfer_id,
-       amount, currency, status, idempotency_key
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+       amount, currency, status, transfer_status, idempotency_key
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       payee.id,
@@ -47,6 +47,7 @@ export async function initiatePayout(input: InitiatePayoutInput) {
       input.amount,
       currency,
       mapStripePayoutStatus(payout.status),
+      "paid",
       idempotencyKey,
     ],
   );
@@ -69,5 +70,10 @@ export async function findPayoutByStripePayoutId(stripePayoutId: string) {
     `SELECT * FROM payouts WHERE stripe_payout_id = $1`,
     [stripePayoutId],
   );
+  return result.rows[0] ?? null;
+}
+
+export async function getPayoutById(id: string) {
+  const result = await query(`SELECT * FROM payouts WHERE id = $1`, [id]);
   return result.rows[0] ?? null;
 }

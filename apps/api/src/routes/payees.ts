@@ -1,23 +1,24 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import { createPayee } from "../services/payeeService.js";
-import type { CreatePayeeInput } from "../config/countries/types.js";
+import { normalizePayeeBody } from "../utils/normalizePayeeBody.js";
 
 /** Admin-only: create Connect Custom payee + bank (no recipient Stripe login). */
 export const payeesRouter = Router();
 
 payeesRouter.post("/", requireAdmin, async (req, res) => {
   try {
-    const body = req.body as CreatePayeeInput;
+    const input = normalizePayeeBody(req.body);
 
-    if (!body.countryCode || !body.individual || !body.bank) {
+    if (!input) {
       res.status(400).json({
-        error: "countryCode, individual, and bank are required",
+        error:
+          "Provide bank (iban, swift) and either name or individual (firstName, lastName). Optional: countryCode (default JO), email.",
       });
       return;
     }
 
-    const result = await createPayee(body);
+    const result = await createPayee(input);
     res.status(201).json(result);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

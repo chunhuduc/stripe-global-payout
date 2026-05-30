@@ -9,7 +9,7 @@ import {
 export const webhooksRouter = Router();
 
 /**
- * Stripe platform webhooks (configure payout.paid and payout.failed in Dashboard).
+ * Stripe platform webhooks. Configure transfer + payout events in Dashboard (see docs/WEBHOOKS.md).
  * No admin key: authenticity is the Stripe-Signature header + STRIPE_WEBHOOK_SECRET.
  */
 webhooksRouter.post(

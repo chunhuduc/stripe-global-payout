@@ -43,7 +43,7 @@ If deploy fails with "default export must be a function or server", confirm `api
 In **Stripe Dashboard → Developers → Webhooks (test mode)**:
 
 - Endpoint: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
-- Events: `payout.paid`, `payout.failed`
+- Events: `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed`
 - Copy signing secret → `STRIPE_WEBHOOK_SECRET` in Vercel, redeploy if needed
 
 Local dev: `stripe listen --forward-to localhost:3000/webhooks/stripe` (or forward to preview URL).

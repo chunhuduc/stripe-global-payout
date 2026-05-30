@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth.js";
-import { initiatePayout } from "../services/payoutService.js";
+import {
+  getPayoutById,
+  initiatePayout,
+} from "../services/payoutService.js";
 
 /** Admin-only: transfer + payout to a payee's connected account and bank. */
 export const payoutsRouter = Router();
@@ -32,6 +35,22 @@ payoutsRouter.post("/", requireAdmin, async (req, res) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("initiatePayout failed", err);
+    res.status(500).json({ error: message });
+  }
+});
+
+/** Demo: read payout + transfer_status after webhooks fire. */
+payoutsRouter.get("/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const payout = await getPayoutById(id);
+    if (!payout) {
+      res.status(404).json({ error: "Payout not found" });
+      return;
+    }
+    res.json({ payout });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     res.status(500).json({ error: message });
   }
 });

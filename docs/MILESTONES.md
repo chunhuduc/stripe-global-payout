@@ -9,9 +9,11 @@
 - Express API on **Vercel** with **Neon** Postgres
 - Create payee for Jordan (`JO`) with IBAN/SWIFT
 - Admin endpoint to initiate transfer + payout
-- Stripe webhook handler for `payout.paid` and `payout.failed`
-- Dedupe webhook delivery using `stripe_webhook_events.event_id`
-- Health check, Postman collection (`postman/milestone-1.json`)
+- Stripe webhook handler for `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed`
+- `transfer_status` + payout `status` in Postgres; console logging on webhook
+- Trial Postman: `postman/trial-mini-flow.json`
+- Payee body accepts trial `{ name, bank }` or full individual payload
+- `GET /api/payouts/:id` for status after webhooks
 - [docs/DEPLOY.md](DEPLOY.md) for Vercel + Neon
 
 **Out of scope for phase 1**:
