@@ -34,7 +34,9 @@ npm run migrate
 | `ADMIN_API_KEY` | Strong secret for `X-Admin-Key` |
 | `NODE_ENV` | `production` |
 
-4. Deploy. API base: `https://<project>.vercel.app`
+4. Deploy. `buildCommand` runs `npm run build` (required so `apps/api/dist` exists). API base: `https://<project>.vercel.app`
+
+If deploy fails with "default export must be a function or server", confirm `api/index.ts` re-exports `apps/api/dist/app.js` (default Express app) and redeploy after `npm run build` succeeds locally.
 
 ## 4. Stripe webhooks (production URL)
 

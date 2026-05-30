@@ -1,7 +1,5 @@
 /**
- * Vercel serverless entry: all routes rewrite here (see vercel.json).
- * Run `npm run build` before deploy so dist/app.js exists.
+ * Vercel serverless entry (see vercel.json rewrites).
+ * Build must run first: `npm run build` produces apps/api/dist with default export.
  */
-import { createApp } from "../apps/api/dist/app.js";
-
-export default createApp();
+export { default } from "../apps/api/dist/app.js";

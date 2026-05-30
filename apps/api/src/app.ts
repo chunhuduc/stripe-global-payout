@@ -21,3 +21,6 @@ export function createApp(): express.Express {
 
   return app;
 }
+
+/** Vercel @vercel/node requires a default export that is an Express app or handler. */
+export default createApp();
