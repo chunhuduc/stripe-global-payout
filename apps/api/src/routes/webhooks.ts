@@ -10,8 +10,8 @@ import {
 export const webhooksRouter = Router();
 
 /**
- * Stripe webhooks: Global Payouts v2 outbound payment events + legacy Connect (if any).
- * Authenticity: Stripe-Signature + STRIPE_WEBHOOK_SECRET.
+ * Stripe webhooks for Global Payouts outbound payments (v2 thin events).
+ * Requires raw body (registered before express.json in app.ts).
  */
 webhooksRouter.post(
   "/stripe",
@@ -25,10 +25,10 @@ webhooksRouter.post(
 
     try {
       const rawBody = req.body as Buffer;
-      const verified = constructStripeEvent(rawBody, signature);
+      constructStripeEvent(rawBody, signature);
       const payload = parseWebhookPayload(rawBody);
       const eventId = payload.id;
-      const eventType = "type" in payload ? String(payload.type) : verified.type;
+      const eventType = payload.type;
 
       const isNew = await recordWebhookEvent(eventId, eventType, payload);
       if (!isNew) {
@@ -36,7 +36,7 @@ webhooksRouter.post(
         return;
       }
 
-      await handleStripeWebhook(rawBody, verified);
+      await handleStripeWebhook(rawBody);
       res.json({ received: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Webhook error";

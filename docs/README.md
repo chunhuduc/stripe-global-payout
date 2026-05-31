@@ -10,4 +10,5 @@ Guides for running and operating this API on your Stripe platform account.
 | [WEBHOOKS.md](./WEBHOOKS.md) | Webhook endpoint, event types, deduplication |
 | [DEPLOY.md](./DEPLOY.md) | Vercel + Neon deployment |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System design and data model |
+| [CODEMAP.md](./CODEMAP.md) | Source file guide for developers |
 | [MILESTONES.md](./MILESTONES.md) | Delivered scope and planned work |

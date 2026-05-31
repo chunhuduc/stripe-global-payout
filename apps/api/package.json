@@ -9,7 +9,6 @@
     "migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {
-    "@aaron-payout/shared": "*",
     "dotenv": "^16.4.7",
     "@neondatabase/serverless": "^0.10.4",
     "express": "^4.21.2",

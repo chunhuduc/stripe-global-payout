@@ -37,7 +37,10 @@ function stripeCountryCode(iso2: string): string {
 }
 
 /**
- * Global Payouts: create recipient (Accounts v2), submit identity, attach wire bank (Jordan JO).
+ * Global Payouts payee onboarding (Stripe-side):
+ * 1. Create Accounts v2 recipient with wire capability
+ * 2. Submit individual identity
+ * 3. Outbound Setup Intent to attach IBAN/SWIFT as PayoutMethod
  */
 export async function createGlobalPayoutRecipient(params: {
   countryCode: string;

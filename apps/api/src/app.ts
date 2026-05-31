@@ -5,7 +5,8 @@ import { payoutsRouter } from "./routes/payouts.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 
 /**
- * Express app factory (local dev + Vercel serverless via api/index.ts).
+ * Express app factory (local dev + Vercel via api/index.ts).
+ * Route order matters: /webhooks before express.json() so Stripe signatures use the raw body.
  */
 export function createApp(): express.Express {
   const app = express();

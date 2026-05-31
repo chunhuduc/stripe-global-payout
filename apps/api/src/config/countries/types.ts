@@ -1,6 +1,11 @@
-import type { CountryConfig } from "@aaron-payout/shared";
-
-export type { CountryConfig };
+/** Per-country payout rules (currency, required bank fields). */
+export interface CountryConfig {
+  code: string;
+  name: string;
+  defaultCurrency: string;
+  requiresIban: boolean;
+  requiresSwift: boolean;
+}
 
 export interface BankInput {
   iban: string;

@@ -12,6 +12,7 @@ Start with **[docs/README.md](docs/README.md)**:
 - [Webhooks](docs/WEBHOOKS.md)
 - [Deploy](docs/DEPLOY.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Code map](docs/CODEMAP.md)
 
 ## Quick start (local)
 

@@ -2,7 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
 
 /**
- * M1 admin gate: shared secret header until phase 2 UI auth (session, OAuth, etc.).
+ * Admin routes require header X-Admin-Key matching ADMIN_API_KEY.
+ * Replace with session or OAuth when the admin UI (apps/web) is added.
  */
 export function requireAdmin(
   req: Request,

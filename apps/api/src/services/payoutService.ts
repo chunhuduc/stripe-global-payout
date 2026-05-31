@@ -6,14 +6,14 @@ import { getPayeeById } from "./payeeService.js";
 
 export interface InitiatePayoutInput {
   payeeId: string;
-  /** Minor units (Stripe integer amount). */
+  /** Amount in minor units (e.g. 1000 fils for 10.00 JOD). */
   amount: number;
   currency?: string;
 }
 
 /**
- * Admin-initiated outbound payment (Global Payouts).
- * Final status arrives via v2.money_management.outbound_payment.* webhooks.
+ * Creates a Stripe Outbound Payment and stores a pending payout row.
+ * Final status is updated by webhooks (see webhookService.ts).
  */
 export async function initiatePayout(input: InitiatePayoutInput) {
   const payee = await getPayeeById(input.payeeId);
@@ -57,18 +57,9 @@ export async function initiatePayout(input: InitiatePayoutInput) {
 
 function mapOutboundPaymentStatus(status: string): string {
   if (status === "posted") return "paid";
-  if (status === "failed" || status === "canceled" || status === "returned") {
-    return status === "canceled" ? "canceled" : "failed";
-  }
+  if (status === "failed" || status === "returned") return "failed";
+  if (status === "canceled") return "canceled";
   return "pending";
-}
-
-export async function findPayoutByOutboundPaymentId(stripeOutboundPaymentId: string) {
-  const result = await query(
-    `SELECT * FROM payouts WHERE stripe_outbound_payment_id = $1`,
-    [stripeOutboundPaymentId],
-  );
-  return result.rows[0] ?? null;
 }
 
 export async function getPayoutById(id: string) {

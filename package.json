@@ -2,8 +2,7 @@
   "name": "aaron-stripe-payout",
   "private": true,
   "workspaces": [
-    "apps/api",
-    "packages/shared"
+    "apps/api"
   ],
   "scripts": {
     "dev": "npm run dev -w @aaron-payout/api",

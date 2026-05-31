@@ -101,9 +101,7 @@ sequenceDiagram
 | v2 HTTP client | `apps/api/src/stripe/v2Client.ts` (preview API version header) |
 | Webhooks | `apps/api/src/services/webhookService.ts` |
 
-**Not used for new payees:** Stripe Connect Custom accounts, `transfers.create`, connected-account `payouts.create`.
-
-Legacy Connect webhook handlers remain for existing database rows only.
+**Not used:** Stripe Connect Custom accounts, `transfers.create`, or connected-account `payouts.create`.
 
 ## Configuration
 

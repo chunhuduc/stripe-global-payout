@@ -4,7 +4,8 @@ import { query } from "../db/client.js";
 import { createGlobalPayoutRecipient } from "../stripe/recipients.js";
 
 /**
- * Onboard a payee: Global Payouts recipient + wire PayoutMethod, then store Stripe ids locally.
+ * Saves a freelancer in Stripe (recipient + payout method) and mirrors ids in Postgres.
+ * Does not move money; use initiatePayout for that.
  */
 export async function createPayee(input: CreatePayeeInput) {
   getCountryConfig(input.countryCode);

@@ -1,4 +1,4 @@
--- Global Payouts pivot: recipients + payout methods (replaces Connect stripe_account_id).
+-- Global Payouts: store recipient + payout method ids; outbound payment id on payouts.
 
 ALTER TABLE payees
   ADD COLUMN IF NOT EXISTS stripe_recipient_id VARCHAR(255),
@@ -20,7 +20,7 @@ ALTER TABLE payouts
 CREATE INDEX IF NOT EXISTS idx_payouts_stripe_outbound_payment_id
   ON payouts (stripe_outbound_payment_id);
 
--- Legacy Connect columns kept nullable for existing rows; new payouts use stripe_outbound_payment_id.
+-- stripe_transfer_id / stripe_payout_id left nullable for older rows; new payouts use stripe_outbound_payment_id.
 ALTER TABLE payouts
   ALTER COLUMN stripe_payout_id DROP NOT NULL,
   ALTER COLUMN stripe_transfer_id DROP NOT NULL;

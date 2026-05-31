@@ -1,4 +1,4 @@
--- Phase 1 schema: payees (Connect accounts), payouts (transfer + payout ids), webhook dedupe log.
+-- Initial schema (extended by 002 and 003 for Global Payouts).
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 

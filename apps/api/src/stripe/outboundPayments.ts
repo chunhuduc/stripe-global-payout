@@ -33,6 +33,7 @@ export async function createOutboundPayment(
   return stripeV2Request<OutboundPayment>("/v2/money_management/outbound_payments", {
     method: "POST",
     body: {
+      // Financial account is typically USD on a US platform; amount.currency is the payee payout currency.
       from: {
         financial_account: env.stripeFinancialAccountId,
         currency: "usd",

@@ -11,16 +11,11 @@
 
 Obtain the signing secret from the Stripe Dashboard webhook settings or from `stripe listen` during local development.
 
-## Product terminology vs Stripe events
+## "Transfer" vs Stripe event names
 
-Many payout specs refer to a **transfer** to the freelancer's bank. In this integration that step is a Stripe **Outbound Payment**, not a Connect **`transfer.*`** webhook.
+If your product spec says **transfer** to the freelancer's bank, Stripe implements that as an **Outbound Payment**. This API listens for `v2.money_management.outbound_payment.*`, not Connect `transfer.*` events.
 
-| Business step | Stripe mechanism | Webhooks handled by this API |
-| ------------- | ---------------- | ---------------------------- |
-| Pay freelancer (Global Payouts) | Outbound Payment v2 | `v2.money_management.outbound_payment.*` |
-| Legacy Connect (old rows only) | `transfers.create` + `payouts.create` on connected account | `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed` |
-
-New payouts store `stripe_outbound_payment_id` and are updated from **v2 outbound payment** events only.
+Each payout row uses `stripe_outbound_payment_id` to match webhook `related_object.id`.
 
 ## Handled events (Global Payouts)
 
