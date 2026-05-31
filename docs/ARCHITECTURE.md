@@ -2,18 +2,14 @@
 
 ## Overview
 
-Production API: `https://aaron-stripe-payout-api.vercel.app`
-
-### System map
-
-Left to right: who calls the API, what it talks to, how Stripe calls back.
+Express API (Vercel serverless) + Neon Postgres + **Stripe Global Payouts** (Accounts v2 recipients, Outbound Payments, v2 webhooks).
 
 ```mermaid
 flowchart LR
-  Admin["Admin\nPostman / curl"]
+  Admin["Admin client\nPostman / app"]
   API["Express API\nVercel"]
   Neon[("Neon\nPostgres")]
-  Stripe["Stripe\nConnect"]
+  Stripe["Stripe\nGlobal Payouts"]
 
   Admin -->|"X-Admin-Key"| API
   API <-->|"read / write"| Neon
@@ -21,30 +17,22 @@ flowchart LR
   Stripe -.->|"webhooks"| API
 ```
 
-| Piece | Role |
-| ----- | ---- |
-| Admin | Creates payees and starts payouts (no Stripe login for payees) |
-| Express API | `apps/api`, entry `api/index.ts` on Vercel |
+| Component | Role |
+| --------- | ---- |
+| Admin client | Creates payees and initiates payouts (freelancers do not log into Stripe) |
+| Express API | `apps/api`, Vercel entry `api/index.ts` |
 | Neon | `payees`, `payouts`, `stripe_webhook_events` |
-| Stripe | Custom accounts, transfer, payout, webhook events |
+| Stripe | Recipients, payout methods, outbound payments, webhook events |
 
-### API routes (phase 1)
+## API routes
 
-```mermaid
-flowchart LR
-  subgraph public [No auth]
-    H["GET /\nGET /health"]
-  end
-  subgraph admin [X-Admin-Key]
-    P1["POST /api/payees"]
-    P2["POST /api/payouts"]
-  end
-  subgraph stripe [Stripe signature]
-    W["POST /webhooks/stripe"]
-  end
-```
+| Auth | Routes |
+| ---- | ------ |
+| None | `GET /`, `GET /health` |
+| `X-Admin-Key` | `POST /api/payees`, `POST /api/payouts`, `GET /api/payouts/:id` |
+| Stripe signature | `POST /webhooks/stripe` |
 
-### Flow A: Create payee
+## Flow: Create payee
 
 ```mermaid
 sequenceDiagram
@@ -55,13 +43,13 @@ sequenceDiagram
   participant DB as Neon
 
   Admin->>API: POST /api/payees
-  API->>Stripe: Custom account + bank
-  Stripe-->>API: account id
+  API->>Stripe: Accounts v2 recipient + Outbound Setup Intent
+  Stripe-->>API: recipient id, payout method id
   API->>DB: insert payee
   API-->>Admin: payee id
 ```
 
-### Flow B: Payout + status
+## Flow: Outbound payment + status
 
 ```mermaid
 sequenceDiagram
@@ -72,53 +60,58 @@ sequenceDiagram
   participant DB as Neon
 
   Admin->>API: POST /api/payouts
-  API->>Stripe: transfer to connected account
-  API->>Stripe: payout to bank
+  API->>Stripe: Outbound Payment (v2)
   API->>DB: insert payout (pending)
-  API-->>Admin: payout ids
+  API-->>Admin: payout id, outbound payment id
 
-  Note over Stripe,API: Later, async
-  Stripe->>API: payout.paid or payout.failed
+  Note over Stripe,API: Async
+  Stripe->>API: v2.money_management.outbound_payment.*
   API->>DB: dedupe event.id, update status
 ```
 
 ## Runtime
 
-- **Production:** Vercel Hobby (free tier), single Express app exported from `api/index.ts`.
-- **Database:** Neon serverless Postgres (`@neondatabase/serverless` Pool), pooled `DATABASE_URL` on Vercel.
-- **Local:** `npm run dev` listens on `PORT`; same code path via `createApp()`.
+- **Production:** Vercel (Express app from `api/index.ts`).
+- **Database:** Neon serverless Postgres (`DATABASE_URL` pooled on Vercel).
+- **Local:** `npm run dev` on `PORT` (default 3000).
 
-## Components
+## Data model
 
-### API (`apps/api`)
+### `payees`
 
-- **Express** app factory in `src/app.ts`; routes: health, payees, payouts, webhooks.
-- **Middleware:** `requireAdmin` checks `X-Admin-Key` against `ADMIN_API_KEY`.
-- **Webhooks:** `/webhooks` router registered before `express.json()` for Stripe raw body verification.
+- Local UUID, `country_code`, `email`, `status`
+- `stripe_recipient_id`, `stripe_payout_method_id` (Global Payouts)
 
-### Data (Neon Postgres)
+### `payouts`
 
-- **payees**: local id, country, Stripe connected account id, email, status.
-- **payouts**: payee link, Stripe transfer/payout ids, amount, currency, status, failure fields.
-- **stripe_webhook_events**: primary key on Stripe `event.id` for idempotent processing.
+- Amount, currency, `status`, optional failure fields
+- `stripe_outbound_payment_id` (primary for new payouts)
+- Legacy nullable columns `stripe_transfer_id`, `stripe_payout_id` for older rows
 
-### Stripe
+### `stripe_webhook_events`
 
-- **Payees:** Connect **Custom** accounts + external bank (Jordan: IBAN + SWIFT in M1).
-- **Payout flow:** transfer to connected account, then payout on connected account.
-- **Webhooks:** `payout.paid` and `payout.failed` update `payouts` by `stripe_payout_id`.
+- Primary key: Stripe `event.id` (idempotent webhook processing)
 
-### Shared (`packages/shared`)
+## Stripe integration
 
-Shared TypeScript types consumed by the API.
+| Concern | Implementation |
+| ------- | -------------- |
+| Payee onboarding | `apps/api/src/stripe/recipients.ts` (Accounts v2 + Outbound Setup Intent) |
+| Payout | `apps/api/src/stripe/outboundPayments.ts` |
+| v2 HTTP client | `apps/api/src/stripe/v2Client.ts` (preview API version header) |
+| Webhooks | `apps/api/src/services/webhookService.ts` |
+
+**Not used for new payees:** Stripe Connect Custom accounts, `transfers.create`, connected-account `payouts.create`.
+
+Legacy Connect webhook handlers remain for existing database rows only.
 
 ## Configuration
 
-- Country modules under `src/config/countries/` (M1: Jordan `JO`).
-- Env validation in `src/config/env.ts` (dotenv only outside production).
+- Country modules: `apps/api/src/config/countries/` (Jordan enabled in phase 1).
+- Environment: `apps/api/src/config/env.ts` (loads `.env.local` locally).
 
-## Security notes (M1)
+## Security
 
-- Shared admin API key (set strong value in Vercel env).
-- Webhook signing secret required.
-- No payee-facing auth in M1.
+- Admin routes: shared secret `ADMIN_API_KEY` via `X-Admin-Key`.
+- Webhooks: `Stripe-Signature` verified with `STRIPE_WEBHOOK_SECRET`.
+- Raw body on `/webhooks/stripe` (registered before `express.json()`).

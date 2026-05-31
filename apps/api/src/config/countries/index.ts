@@ -5,13 +5,13 @@ const registry: Record<string, CountryConfig> = {
   JO: jordan,
 };
 
-/** Phase 2: register PK, TR, ID here without changing payout engine. */
+/** Phase 2: register TR, ID here. Trial implements JO (wire). */
 export function getCountryConfig(code: string): CountryConfig {
   const key = code.toUpperCase();
   const config = registry[key];
   if (!config) {
     throw new Error(
-      `Country not enabled: ${code}. Phase 1 supports JO only; phase 2 adds PK, TR, ID.`,
+      `Country not enabled: ${code}. Trial supports JO; phase 2 adds TR, ID.`,
     );
   }
   return config;

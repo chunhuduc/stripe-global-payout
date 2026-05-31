@@ -1,4 +1,4 @@
--- Track Connect transfer step separately from bank payout (trial + Aaron webhook spec).
+-- Legacy Connect: transfer step status separate from bank payout status.
 
 ALTER TABLE payouts
   ADD COLUMN IF NOT EXISTS transfer_status VARCHAR(32) NOT NULL DEFAULT 'pending';

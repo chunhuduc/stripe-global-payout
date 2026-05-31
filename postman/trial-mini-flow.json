@@ -1,18 +1,25 @@
 {
   "info": {
-    "name": "Stripe Payout Mini-Flow (trial demo)",
+    "name": "Global Payouts API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Three requests for Aaron trial: save freelancer, trigger payout, check status. Set payeeId and payoutId from prior responses."
+    "description": "Create Jordan recipient + payout method, optional outbound payment, payout status. Requires Global Payouts sandbox. See docs/TESTING.md."
   },
   "variable": [
-    { "key": "baseUrl", "value": "https://aaron-stripe-payout-api.vercel.app" },
+    { "key": "baseUrl", "value": "http://localhost:3000" },
     { "key": "adminKey", "value": "change-me-in-production" },
     { "key": "payeeId", "value": "" },
     { "key": "payoutId", "value": "" }
   ],
   "item": [
     {
-      "name": "1. Save freelancer + bank",
+      "name": "0. Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "1. Save recipient + bank (Jordan)",
       "request": {
         "method": "POST",
         "header": [
@@ -21,13 +28,13 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane.doe@example.test\",\n  \"bank\": {\n    \"iban\": \"JO32ABCJ0010123456789012345678\",\n    \"swift\": \"AAAajoJOXXX\"\n  }\n}"
+          "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane.doe@example.test\",\n  \"countryCode\": \"JO\",\n  \"bank\": {\n    \"iban\": \"JO32ABCJ0010123456789012345678\",\n    \"swift\": \"AAAAJOJOXXX\",\n    \"accountHolderName\": \"Jane Doe\"\n  }\n}"
         },
         "url": "{{baseUrl}}/api/payees"
       }
     },
     {
-      "name": "2. Trigger payout",
+      "name": "2. (Optional) Outbound payment",
       "request": {
         "method": "POST",
         "header": [
@@ -36,13 +43,13 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"payeeId\": \"{{payeeId}}\",\n  \"amount\": 1000,\n  \"currency\": \"jod\",\n  \"transferCurrency\": \"usd\"\n}"
+          "raw": "{\n  \"payeeId\": \"{{payeeId}}\",\n  \"amount\": 1000,\n  \"currency\": \"jod\"\n}"
         },
         "url": "{{baseUrl}}/api/payouts"
       }
     },
     {
-      "name": "3. Get payout status",
+      "name": "3. (Optional) Get payout status",
       "request": {
         "method": "GET",
         "header": [

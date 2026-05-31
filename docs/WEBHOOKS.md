@@ -2,42 +2,52 @@
 
 ## Endpoint
 
-- **URL**: `POST /webhooks/stripe`
-- **Body**: Raw JSON (not parsed by global `express.json()`)
-- **Header**: `Stripe-Signature` (required)
+| Item | Value |
+| ---- | ----- |
+| URL | `POST /webhooks/stripe` |
+| Body | Raw JSON (not parsed by global `express.json()`) |
+| Header | `Stripe-Signature` (required) |
+| Secret env | `STRIPE_WEBHOOK_SECRET` |
 
-Configure the signing secret in `STRIPE_WEBHOOK_SECRET` (from Stripe Dashboard or `stripe listen`).
+Obtain the signing secret from the Stripe Dashboard webhook settings or from `stripe listen` during local development.
 
-## Handled events
+## Product terminology vs Stripe events
 
-| Stripe event | Trial label | DB update |
-| ------------ | ----------- | --------- |
-| `transfer.created` | transfer paid (platform to connected account) | `payouts.transfer_status` = `paid` |
-| `transfer.reversed` | transfer failed / reversed | `payouts.transfer_status` = `failed` |
-| `payout.paid` | bank payout succeeded | `payouts.status` = `paid` |
-| `payout.failed` | bank payout failed | `payouts.status` = `failed` + failure fields |
+Many payout specs refer to a **transfer** to the freelancer's bank. In this integration that step is a Stripe **Outbound Payment**, not a Connect **`transfer.*`** webhook.
 
-**Note:** Stripe does not emit `transfer.paid` or `transfer.failed`. Connect transfers succeed or fail synchronously on `transfers.create`; **`transfer.created`** is the webhook that confirms the transfer landed. We map it to `transfer_status = paid` in the docs above so it matches the trial wording.
+| Business step | Stripe mechanism | Webhooks handled by this API |
+| ------------- | ---------------- | ---------------------------- |
+| Pay freelancer (Global Payouts) | Outbound Payment v2 | `v2.money_management.outbound_payment.*` |
+| Legacy Connect (old rows only) | `transfers.create` + `payouts.create` on connected account | `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed` |
 
-Bank delivery status uses **`payout.paid`** / **`payout.failed`**.
+New payouts store `stripe_outbound_payment_id` and are updated from **v2 outbound payment** events only.
+
+## Handled events (Global Payouts)
+
+| Stripe event | `payouts.status` |
+| ------------ | ---------------- |
+| `v2.money_management.outbound_payment.posted` | `paid` |
+| `v2.money_management.outbound_payment.failed` | `failed` |
+| `v2.money_management.outbound_payment.canceled` | `canceled` |
+| `v2.money_management.outbound_payment.returned` | `failed` |
+| `v2.money_management.outbound_payment.created` | `pending` |
+| `v2.money_management.outbound_payment.processing` | `pending` |
+
+Thin v2 payloads use `related_object.id` as the outbound payment ID. Handler: `apps/api/src/services/webhookService.ts`.
 
 ## Deduplication
 
-Stripe may retry the same event. Before handling:
+1. Insert into `stripe_webhook_events` with primary key `event_id` (= Stripe `event.id`).
+2. On unique violation (`23505`), respond `{ received: true, duplicate: true }` and skip side effects.
+3. Otherwise run the handler and respond `{ received: true }`.
 
-1. Insert row into `stripe_webhook_events` with primary key `event_id` (= Stripe `event.id`).
-2. On unique violation (`23505`), respond with `{ received: true, duplicate: true }` and skip handler side effects.
-3. On success, run handler then respond `{ received: true }`.
+## Dashboard configuration
 
-Status changes are also written to server logs (`console.info`).
+Subscribe your endpoint to the v2 outbound payment events listed above.
 
-## Production (Vercel)
+**Deployed example path:** `https://<your-host>/webhooks/stripe`
 
-In Stripe Dashboard (test mode):
-
-- URL: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
-- Events: `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed`
-- Signing secret → `STRIPE_WEBHOOK_SECRET` on Vercel
+Set `STRIPE_WEBHOOK_SECRET` in Vercel to match the endpoint signing secret.
 
 ## Local testing
 
@@ -45,18 +55,10 @@ In Stripe Dashboard (test mode):
 stripe listen --forward-to localhost:3000/webhooks/stripe
 ```
 
-Use the webhook signing secret printed by the CLI in `.env.local` as `STRIPE_WEBHOOK_SECRET`.
+Place the printed `whsec_...` in `.env.local`, restart the API, then create an outbound payment so Stripe delivers real events.
 
-Subscribe to the events listed above in the Dashboard or use:
-
-```bash
-stripe trigger transfer.created
-stripe trigger payout.paid
-```
-
-Note: triggered events may not match rows in `payouts` unless ids align; use the full Postman flow for integration tests.
+The Stripe CLI `stripe trigger` command does not support v2 outbound payment event types.
 
 ## Errors
 
-- Missing or invalid signature: `400` with message prefix `Webhook Error:`
-- Handler exceptions during construction/verification: `400`
+Invalid signature returns **400** with `Webhook Error: ...`. Stripe may retry according to its retry policy.

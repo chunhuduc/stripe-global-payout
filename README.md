@@ -1,21 +1,27 @@
-# Stripe Connect Payout API
+# Stripe Global Payouts API
 
-Monorepo for admin-driven payee onboarding and payouts via Stripe Connect Custom (Phase 1: API on **Vercel**, **Neon** Postgres, Jordan payees, webhooks).
+Monorepo for admin-driven freelancer onboarding and payouts via **Stripe Global Payouts** (US platform account, recipients in Jordan, Turkey, and Indonesia). Phase 1 ships the API on **Vercel** with **Neon** Postgres, Jordan wire recipients, and v2 outbound payment webhooks.
 
-## Deploy target
+## Documentation
 
-- **API:** [Vercel](https://vercel.com) (serverless Express via `api/index.ts`)
-- **Database:** [Neon](https://neon.tech) Postgres (free tier; link from Vercel Storage)
+Start with **[docs/README.md](docs/README.md)**:
 
-See [docs/DEPLOY.md](docs/DEPLOY.md) for full setup.
+- [Getting started](docs/GETTING-STARTED.md)
+- [Global Payouts sandbox](docs/GLOBAL-PAYOUTS-SANDBOX.md)
+- [Testing](docs/TESTING.md)
+- [Webhooks](docs/WEBHOOKS.md)
+- [Deploy](docs/DEPLOY.md)
+- [Architecture](docs/ARCHITECTURE.md)
 
 ## Quick start (local)
 
-1. Copy env and set Stripe + Neon URLs (use **`.env.local`** for secrets):
+1. Copy environment file:
 
    ```bash
    cp .env.example .env.local
    ```
+
+   Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DATABASE_URL`, and `ADMIN_API_KEY` (see [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md)).
 
 2. Install and migrate:
 
@@ -24,118 +30,53 @@ See [docs/DEPLOY.md](docs/DEPLOY.md) for full setup.
    npm run migrate
    ```
 
-3. Run API locally:
+3. Run API:
 
    ```bash
    npm run dev
    ```
 
-Default local base: `http://localhost:3000`. Admin routes require `X-Admin-Key` (`ADMIN_API_KEY`).
+4. Webhooks (second terminal):
+
+   ```bash
+   stripe listen --forward-to localhost:3000/webhooks/stripe
+   ```
+
+   Copy the CLI `whsec_...` into `.env.local` as `STRIPE_WEBHOOK_SECRET` and restart the API.
+
+Default base URL: `http://localhost:3000`. Admin routes require `X-Admin-Key`.
 
 ## API
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/` | None | Service info + endpoint map (same payload as `/health`) |
+| GET | `/` | None | Service info |
 | GET | `/health` | None | Liveness check |
-| POST | `/api/payees` | `X-Admin-Key` | Save freelancer + bank (`name` + `bank`, or `individual` + `bank`) |
-| POST | `/api/payouts` | `X-Admin-Key` | Transfer to connected account and create payout |
-| GET | `/api/payouts/:id` | `X-Admin-Key` | Payout status (`status`, `transfer_status`) |
-| POST | `/webhooks/stripe` | Stripe signature | `transfer.*` + `payout.*` (deduped by `event.id`) |
+| POST | `/api/payees` | `X-Admin-Key` | Create Global Payouts recipient + wire bank (Jordan in Postman) |
+| POST | `/api/payouts` | `X-Admin-Key` | Outbound payment (`STRIPE_FINANCIAL_ACCOUNT_ID` required) |
+| GET | `/api/payouts/:id` | `X-Admin-Key` | Payout status |
+| POST | `/webhooks/stripe` | Stripe signature | `v2.money_management.outbound_payment.*` |
 
-**Trial demo:** import [`postman/trial-mini-flow.json`](postman/trial-mini-flow.json) (3 requests).
+Postman collection: [`postman/trial-mini-flow.json`](postman/trial-mini-flow.json).
 
-### curl examples
+## How it works
 
-Use `http://localhost:3000` locally or `https://aaron-stripe-payout-api.vercel.app` in production (`BASE` below).
+1. Freelancer personal and bank data are submitted to your platform.
+2. The API creates a Stripe **recipient** (Accounts v2) and **payout method**.
+3. An admin triggers an **outbound payment** from your financial account (when configured).
+4. Webhooks update payout status: paid, failed, or canceled.
 
-Root or health:
-
-```bash
-curl -s "$BASE/"
-curl -s "$BASE/health"
-```
-
-Create payee (trial-style `name` + bank):
-
-```bash
-curl -s -X POST "$BASE/api/payees" \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Key: $ADMIN_API_KEY" \
-  -d '{
-    "name": "Jane Doe",
-    "email": "jane@example.test",
-    "bank": { "iban": "JO32...", "swift": "AAAajoJOXXX" }
-  }'
-```
-
-Create payee (full body, Jordan):
-
-```bash
-curl -s -X POST "$BASE/api/payees" \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Key: $ADMIN_API_KEY" \
-  -d '{
-    "countryCode": "JO",
-    "individual": {
-      "firstName": "Test",
-      "lastName": "Recipient",
-      "email": "test.recipient@example.com"
-    },
-    "bank": {
-      "accountHolderName": "Test Recipient",
-      "iban": "JO32ABCJ0010123456789012345678",
-      "swift": "AAAajoJOXXX"
-    }
-  }'
-```
-
-Initiate payout (`amount` in minor units):
-
-```bash
-curl -s -X POST "$BASE/api/payouts" \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Key: $ADMIN_API_KEY" \
-  -d '{
-    "payeeId": "<payee-uuid>",
-    "amount": 1000,
-    "currency": "jod",
-    "transferCurrency": "usd"
-  }'
-```
-
-Stripe webhooks (local):
-
-```bash
-stripe listen --forward-to localhost:3000/webhooks/stripe
-```
-
-Production webhook URL: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
-
-## Repo layout
-
-| Path | Purpose |
-|------|---------|
-| `apps/api` | Express API source |
-| `api/index.ts` | Vercel serverless entry (imports built `app`) |
-| `apps/web` | Admin UI placeholder (phase 2) |
-| `packages/shared` | Shared TypeScript types |
-| `postman/milestone-1.json` | Postman collection |
-| `docs/` | Architecture, deploy, milestones, webhooks |
-| `vercel.json` | Vercel build and rewrites |
+No Connect connected accounts. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Scripts
 
 | Script | Action |
 |--------|--------|
-| `npm run dev` | Local API (`tsx watch`) |
-| `npm run build` | Compile `apps/api` (required before Vercel deploy) |
-| `npm run migrate` | Apply SQL to Neon |
-| `npm run start` | Run compiled API locally |
+| `npm run dev` | Local API |
+| `npm run build` | Compile API |
+| `npm run migrate` | Apply SQL to Postgres |
+| `npm run start` | Run compiled API |
 
-## Docs
+## Deploy
 
-- [docs/DEPLOY.md](docs/DEPLOY.md): Vercel + Neon
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/MILESTONES.md](docs/MILESTONES.md)
-- [docs/WEBHOOKS.md](docs/WEBHOOKS.md)
+[Vercel](https://vercel.com) + [Neon](https://neon.tech). See [docs/DEPLOY.md](docs/DEPLOY.md).

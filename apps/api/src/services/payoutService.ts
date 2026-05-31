@@ -1,20 +1,19 @@
 import { v4 as uuidv4 } from "uuid";
 import { getCountryConfig } from "../config/countries/index.js";
 import { query } from "../db/client.js";
+import { createOutboundPayment } from "../stripe/outboundPayments.js";
 import { getPayeeById } from "./payeeService.js";
-import { transferAndPayout } from "../stripe/payouts.js";
 
 export interface InitiatePayoutInput {
   payeeId: string;
   /** Minor units (Stripe integer amount). */
   amount: number;
   currency?: string;
-  transferCurrency?: string;
 }
 
 /**
- * Admin-initiated payout: fund connected account, create payout, persist pending row.
- * Final status arrives via payout.paid / payout.failed webhooks.
+ * Admin-initiated outbound payment (Global Payouts).
+ * Final status arrives via v2.money_management.outbound_payment.* webhooks.
  */
 export async function initiatePayout(input: InitiatePayoutInput) {
   const payee = await getPayeeById(input.payeeId);
@@ -22,53 +21,52 @@ export async function initiatePayout(input: InitiatePayoutInput) {
     throw new Error(`Payee not found: ${input.payeeId}`);
   }
 
+  const recipientId = payee.stripe_recipient_id as string | undefined;
+  const payoutMethodId = payee.stripe_payout_method_id as string | undefined;
+  if (!recipientId || !payoutMethodId) {
+    throw new Error("Payee is missing Stripe recipient or payout method ids");
+  }
+
   const country = getCountryConfig(payee.country_code as string);
   const currency = (input.currency ?? country.defaultCurrency).toLowerCase();
   const idempotencyKey = uuidv4();
 
-  const { transfer, payout } = await transferAndPayout({
-    connectedAccountId: payee.stripe_account_id as string,
+  const outbound = await createOutboundPayment({
+    recipientId,
+    payoutMethodId,
     amount: input.amount,
     currency,
-    transferCurrency: input.transferCurrency?.toLowerCase(),
-    idempotencyKey,
+    description: `Payout ${idempotencyKey}`,
   });
+
+  const status = mapOutboundPaymentStatus(outbound.status);
 
   const result = await query(
     `INSERT INTO payouts (
-       payee_id, stripe_payout_id, stripe_transfer_id,
-       amount, currency, status, transfer_status, idempotency_key
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       payee_id, stripe_outbound_payment_id, amount, currency, status, idempotency_key
+     ) VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [
-      payee.id,
-      payout.id,
-      transfer.id,
-      input.amount,
-      currency,
-      mapStripePayoutStatus(payout.status),
-      "paid",
-      idempotencyKey,
-    ],
+    [payee.id, outbound.id, input.amount, currency, status, idempotencyKey],
   );
 
   return {
     payout: result.rows[0],
-    stripePayoutId: payout.id,
-    stripeTransferId: transfer.id,
+    stripeOutboundPaymentId: outbound.id,
   };
 }
 
-function mapStripePayoutStatus(status: string): string {
-  if (status === "paid") return "paid";
-  if (status === "failed" || status === "canceled") return "failed";
+function mapOutboundPaymentStatus(status: string): string {
+  if (status === "posted") return "paid";
+  if (status === "failed" || status === "canceled" || status === "returned") {
+    return status === "canceled" ? "canceled" : "failed";
+  }
   return "pending";
 }
 
-export async function findPayoutByStripePayoutId(stripePayoutId: string) {
+export async function findPayoutByOutboundPaymentId(stripeOutboundPaymentId: string) {
   const result = await query(
-    `SELECT * FROM payouts WHERE stripe_payout_id = $1`,
-    [stripePayoutId],
+    `SELECT * FROM payouts WHERE stripe_outbound_payment_id = $1`,
+    [stripeOutboundPaymentId],
   );
   return result.rows[0] ?? null;
 }

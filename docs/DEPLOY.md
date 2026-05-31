@@ -1,59 +1,66 @@
-# Deploy (Vercel + Neon, free tier)
-
-No Docker. Postgres runs on **Neon** (free tier). API runs on **Vercel** (Hobby/free).
+# Deploy (Vercel + Neon)
 
 ## 1. Neon database
 
-1. Create a project at [neon.tech](https://neon.tech) (free tier) or use **Vercel → Storage → Neon** on the same Vercel project.
-2. Copy connection strings:
+1. Create a project at [neon.tech](https://neon.tech) or link **Vercel → Storage → Neon** on the Vercel project.
+2. Connection strings:
    - **Pooled** → `DATABASE_URL` (API runtime)
-   - **Direct** → `DATABASE_URL_UNPOOLED` (migrations; optional if only one URL is shown)
+   - **Direct** → `DATABASE_URL_UNPOOLED` (migrations, if shown separately)
 
-## 2. Run migrations (once)
+## 2. Migrations
 
-From your machine with env set:
+From a machine with repo access and env configured:
 
 ```bash
 cp .env.example .env.local
-# fill DATABASE_URL and DATABASE_URL_UNPOOLED (migrate loads .env.local from repo root)
+# set DATABASE_URL (and DATABASE_URL_UNPOOLED if used)
 npm install
 npm run migrate
 ```
 
 ## 3. Vercel project
 
-1. Import the GitHub repo in [vercel.com](https://vercel.com).
-2. Framework preset: **Other** (build uses `vercel.json`).
-3. **Environment variables** (Production + Preview):
+1. Import the GitHub repository in [vercel.com](https://vercel.com).
+2. Framework preset: **Other** (`vercel.json` defines build).
+3. **Environment variables** (Production and Preview):
 
 | Variable | Notes |
 | -------- | ----- |
-| `STRIPE_SECRET_KEY` | `sk_test_...` for M1 |
+| `STRIPE_SECRET_KEY` | Sandbox-scoped `sk_test_...` with Global Payouts enabled |
 | `STRIPE_WEBHOOK_SECRET` | From Stripe Dashboard webhook endpoint |
-| `DATABASE_URL` | Neon **pooled** URL (auto if Neon linked) |
+| `STRIPE_API_VERSION` | Optional; defaults in application code |
+| `STRIPE_FINANCIAL_ACCOUNT_ID` | `fa_test_...` when using outbound payments |
+| `DATABASE_URL` | Neon **pooled** URL |
 | `ADMIN_API_KEY` | Strong secret for `X-Admin-Key` |
 | `NODE_ENV` | `production` |
 
-4. Deploy. `buildCommand` runs `npm run build` (required so `apps/api/dist` exists). API base: `https://aaron-stripe-payout-api.vercel.app`
+4. Deploy. Build runs `npm run build` (compiles `apps/api` to `dist`).
 
-If deploy fails with "default export must be a function or server", confirm `api/index.ts` re-exports `apps/api/dist/app.js` (default Express app) and redeploy after `npm run build` succeeds locally.
+Example API URL pattern: `https://<project>.vercel.app`
 
 ## 4. Stripe webhooks (production URL)
 
-In **Stripe Dashboard → Developers → Webhooks (test mode)**:
+In **Stripe Dashboard → Developers → Webhooks** (sandbox or test mode as appropriate):
 
-- Endpoint: `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
-- Events: `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed`
-- Copy signing secret → `STRIPE_WEBHOOK_SECRET` in Vercel, redeploy if needed
+- **Endpoint URL:** `https://<your-vercel-host>/webhooks/stripe`
+- **Events (v2 outbound payments):**
+  - `v2.money_management.outbound_payment.created`
+  - `v2.money_management.outbound_payment.posted`
+  - `v2.money_management.outbound_payment.failed`
+  - `v2.money_management.outbound_payment.canceled`
+  - `v2.money_management.outbound_payment.returned` (optional)
 
-Local dev: `stripe listen --forward-to localhost:3000/webhooks/stripe` (or forward to preview URL).
+Copy the signing secret into Vercel as `STRIPE_WEBHOOK_SECRET` and redeploy if needed.
 
-## 5. Postman / curl
+**Local development:** `stripe listen --forward-to localhost:3000/webhooks/stripe`
 
-Set `baseUrl` to your Vercel URL. Admin routes need `X-Admin-Key`.
+## 5. Verify deployment
 
-## Free tier notes
+- `GET /health` on the Vercel URL
+- Postman `baseUrl` set to the Vercel host; `X-Admin-Key` header set
+- Create payee per [TESTING.md](./TESTING.md)
 
-- **Neon:** free tier has storage/compute limits; fine for M1 test traffic.
-- **Vercel Hobby:** serverless execution limits apply; webhook + API routes share the `api/index.ts` Express app.
-- Top up **Stripe test platform balance** before payouts (Dashboard, test mode).
+## Operational notes
+
+- Fund the sandbox **Financial Account** before outbound payments ([GLOBAL-PAYOUTS-SANDBOX.md](./GLOBAL-PAYOUTS-SANDBOX.md)).
+- Neon and Vercel free tiers are suitable for test traffic; monitor limits for production load.

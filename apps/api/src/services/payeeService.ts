@@ -1,58 +1,52 @@
 import { getCountryConfig } from "../config/countries/index.js";
 import type { CreatePayeeInput } from "../config/countries/types.js";
 import { query } from "../db/client.js";
-import {
-  attachBankAccount,
-  createCustomConnectedAccount,
-} from "../stripe/accounts.js";
+import { createGlobalPayoutRecipient } from "../stripe/recipients.js";
 
 /**
- * Onboard a payee: Custom connected account + external bank, then store Stripe ids locally.
+ * Onboard a payee: Global Payouts recipient + wire PayoutMethod, then store Stripe ids locally.
  */
 export async function createPayee(input: CreatePayeeInput) {
-  const country = getCountryConfig(input.countryCode);
+  getCountryConfig(input.countryCode);
 
-  const account = await createCustomConnectedAccount({
-    country: country.code,
+  const stripeResult = await createGlobalPayoutRecipient({
+    countryCode: input.countryCode,
     individual: input.individual,
+    bank: input.bank,
   });
-
-  await attachBankAccount(
-    account.id,
-    input.bank,
-    country.defaultCurrency,
-    country.code,
-  );
 
   const result = await query<{
     id: string;
     country_code: string;
-    stripe_account_id: string;
+    stripe_recipient_id: string;
+    stripe_payout_method_id: string;
     email: string;
     status: string;
     created_at: Date;
   }>(
-    `INSERT INTO payees (country_code, stripe_account_id, email, status)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, country_code, stripe_account_id, email, status, created_at`,
+    `INSERT INTO payees (
+       country_code, stripe_recipient_id, stripe_payout_method_id, email, status
+     ) VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, country_code, stripe_recipient_id, stripe_payout_method_id, email, status, created_at`,
     [
-      country.code,
-      account.id,
+      input.countryCode.toUpperCase(),
+      stripeResult.recipientId,
+      stripeResult.payoutMethodId,
       input.individual.email,
-      // New Custom accounts are often "restricted" until requirements are met; normal in test mode.
-      account.charges_enabled ? "active" : "restricted",
+      stripeResult.recipientStatus,
     ],
   );
 
   return {
     payee: result.rows[0],
-    stripeAccountId: account.id,
+    stripeRecipientId: stripeResult.recipientId,
+    stripePayoutMethodId: stripeResult.payoutMethodId,
   };
 }
 
 export async function getPayeeById(id: string) {
   const result = await query(
-    `SELECT id, country_code, stripe_account_id, email, status, created_at
+    `SELECT id, country_code, stripe_recipient_id, stripe_payout_method_id, email, status, created_at
      FROM payees WHERE id = $1`,
     [id],
   );

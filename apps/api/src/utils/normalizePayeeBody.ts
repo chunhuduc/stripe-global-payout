@@ -17,7 +17,7 @@ type RawPayeeBody = {
 };
 
 /**
- * Accepts trial-style `{ name, bank }` or full `{ individual, bank, countryCode }`.
+ * Accepts shorthand `{ name, bank }` or full `{ individual, bank, countryCode }`.
  */
 export function normalizePayeeBody(body: RawPayeeBody): CreatePayeeInput | null {
   if (!body.bank?.iban || !body.bank?.swift) {

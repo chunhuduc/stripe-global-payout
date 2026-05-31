@@ -3,14 +3,15 @@ import express from "express";
 import {
   constructStripeEvent,
   handleStripeWebhook,
+  parseWebhookPayload,
   recordWebhookEvent,
 } from "../services/webhookService.js";
 
 export const webhooksRouter = Router();
 
 /**
- * Stripe platform webhooks. Configure transfer + payout events in Dashboard (see docs/WEBHOOKS.md).
- * No admin key: authenticity is the Stripe-Signature header + STRIPE_WEBHOOK_SECRET.
+ * Stripe webhooks: Global Payouts v2 outbound payment events + legacy Connect (if any).
+ * Authenticity: Stripe-Signature + STRIPE_WEBHOOK_SECRET.
  */
 webhooksRouter.post(
   "/stripe",
@@ -24,16 +25,18 @@ webhooksRouter.post(
 
     try {
       const rawBody = req.body as Buffer;
-      const event = constructStripeEvent(rawBody, signature);
+      const verified = constructStripeEvent(rawBody, signature);
+      const payload = parseWebhookPayload(rawBody);
+      const eventId = payload.id;
+      const eventType = "type" in payload ? String(payload.type) : verified.type;
 
-      // Dedupe by event.id so Stripe retries do not double-update payout rows.
-      const isNew = await recordWebhookEvent(event);
+      const isNew = await recordWebhookEvent(eventId, eventType, payload);
       if (!isNew) {
         res.json({ received: true, duplicate: true });
         return;
       }
 
-      await handleStripeWebhook(event);
+      await handleStripeWebhook(rawBody, verified);
       res.json({ received: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Webhook error";

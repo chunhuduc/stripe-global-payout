@@ -1,39 +1,41 @@
-# Project phases
+# Project scope
 
-## Phase 1 (API, current)
+## Phase 1 (delivered in this repo)
 
-**Goal**: Prove end-to-end payout to a Jordan payee via Stripe Connect in test mode.
+**Goal:** API foundation for Global Payouts: save freelancer bank details as Stripe recipients, initiate outbound payments, sync status via webhooks.
 
-**Delivered**:
+**Included:**
 
-- Express API on **Vercel** with **Neon** Postgres
-- Create payee for Jordan (`JO`) with IBAN/SWIFT
-- Admin endpoint to initiate transfer + payout
-- Stripe webhook handler for `transfer.created`, `transfer.reversed`, `payout.paid`, `payout.failed`
-- `transfer_status` + payout `status` in Postgres; console logging on webhook
-- Trial Postman: `postman/trial-mini-flow.json`
-- Payee body accepts trial `{ name, bank }` or full individual payload
-- `GET /api/payouts/:id` for status after webhooks
-- [docs/DEPLOY.md](DEPLOY.md) for Vercel + Neon
+- Express API (TypeScript), deployable on Vercel
+- Neon Postgres schema and migrations
+- `POST /api/payees`: recipient + payout method (Jordan wire in Postman collection)
+- `POST /api/payouts`, `GET /api/payouts/:id`: outbound payment flow
+- `POST /webhooks/stripe`: signature verification, event deduplication, status updates
+- Postman: `postman/trial-mini-flow.json`
+- Documentation under `docs/`
 
-**Out of scope for phase 1**:
+**Out of scope for phase 1:**
 
-- Admin web UI (`apps/web` placeholder)
-- Additional countries beyond Jordan
-- Payee self-service onboarding
+- Admin web UI (`apps/web` placeholder only)
+- Turkey and Indonesia recipient field modules (Jordan first)
+- Freelancer self-service onboarding UI
+- Production hardening (rate limits, audit logs, key rotation runbooks)
 
 ## Phase 2 (planned)
 
-- Admin web app on Vercel (`apps/web`) with CORS to API
-- Payee list, payout UI, status views, manual retry
-- Countries: Jordan, Pakistan, Turkey, Indonesia via config
+- Admin dashboard (`apps/web`) with payee list, payout actions, status views
+- Recipient onboarding for **Turkey** and **Indonesia** (country config)
+- Retry / failure handling workflows
+- Reporting and filters (date, payee, status)
 
-## Verification checklist (phase 1)
+## Verification checklist
 
-- [ ] Neon project created; `npm run migrate` succeeds
-- [ ] Vercel deploy green; `GET /health` returns OK on production URL
-- [ ] `npm run build` passes locally
-- [ ] Create payee returns Stripe account id
-- [ ] Initiate payout returns transfer and payout ids
-- [ ] Stripe webhook endpoint points to `https://aaron-stripe-payout-api.vercel.app/webhooks/stripe`
-- [ ] Webhook updates payout status; duplicate `event.id` handled
+Use after deploy and sandbox setup ([GETTING-STARTED.md](./GETTING-STARTED.md), [TESTING.md](./TESTING.md)):
+
+- [ ] `npm run migrate` succeeds against your database
+- [ ] `GET /health` returns OK (local and/or Vercel)
+- [ ] `POST /api/payees` returns recipient and payout method IDs
+- [ ] Stripe Dashboard shows the new recipient
+- [ ] (Optional) `POST /api/payouts` with funded financial account
+- [ ] Webhook endpoint configured; payout `status` updates after outbound payment events
+- [ ] Duplicate webhook `event.id` does not double-apply status changes
