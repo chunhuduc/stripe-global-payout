@@ -75,4 +75,4 @@ npm run migrate
 npm run dev
 ```
 
-Postman: `postman/trial-mini-flow.json` with Jordan success IBAN/SWIFT from the table above.
+Postman: `postman/global-payouts-api.json` with Jordan success IBAN/SWIFT from the table above.

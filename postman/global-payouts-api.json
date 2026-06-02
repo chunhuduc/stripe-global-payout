@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Global Payouts API",
+    "name": "stripe-global-payout",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Create Jordan recipient + payout method, optional outbound payment, payout status. Requires Global Payouts sandbox. See docs/TESTING.md."
+    "description": "Global Payouts API: Jordan recipient + payout method, optional outbound payment, status. Requires GP sandbox. See docs/TESTING.md."
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000" },

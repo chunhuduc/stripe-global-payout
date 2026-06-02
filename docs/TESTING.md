@@ -32,7 +32,7 @@ Copy the CLI `whsec_...` into `.env.local` as `STRIPE_WEBHOOK_SECRET`, then rest
 
 ## Postman
 
-Import `postman/trial-mini-flow.json`. Variables:
+Import `postman/global-payouts-api.json`. Variables:
 
 | Variable | Example |
 | -------- | ------- |

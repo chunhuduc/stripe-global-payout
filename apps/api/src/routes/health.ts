@@ -5,7 +5,7 @@ export const healthRouter = Router();
 function healthPayload() {
   return {
     ok: true,
-    service: "stripe-global-payouts-api",
+    service: "stripe-global-payout",
     product: "Stripe Global Payouts (recipients + outbound payments)",
     endpoints: {
       health: "GET /health",

@@ -39,7 +39,7 @@ API base: `http://localhost:3000`. Admin routes require header `X-Admin-Key: <AD
 | Create payee | `POST /api/payees` (see [TESTING.md](./TESTING.md)) |
 | Webhooks | `stripe listen --forward-to localhost:3000/webhooks/stripe` |
 
-Import Postman collection: `postman/trial-mini-flow.json`.
+Import Postman collection: `postman/global-payouts-api.json`.
 
 ## Terminology
 

@@ -9,7 +9,7 @@ api/index.ts              # Vercel entry (imports compiled Express app)
 apps/api/src/             # Application source
 apps/web/                 # Phase 2 admin UI (placeholder)
 docs/                     # Setup and operations guides
-postman/                  # API test collection
+postman/                  # global-payouts-api.json
 ```
 
 ## Stripe integration (two clients)

@@ -1,7 +1,7 @@
-# Admin web (phase 2)
+# Admin web (v0.2)
 
 Reserved for the admin UI: payee management, payout initiation, status dashboard.
 
-Phase 1 uses the Express API only. See root [README.md](../../README.md) and [docs/MILESTONES.md](../../docs/MILESTONES.md).
+v0.1 is API-only. See root [README.md](../../README.md) and [docs/ROADMAP.md](../../docs/ROADMAP.md).
 
-Planned stack: Vite or Next.js on **Vercel**, API on same project, `STRIPE_PUBLISHABLE_KEY`, `CORS_ORIGIN` on the API.
+Planned stack: Vite or Next.js on Vercel, shared deploy with the API, `STRIPE_PUBLISHABLE_KEY`, `CORS_ORIGIN` on the API.
