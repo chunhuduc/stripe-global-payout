@@ -6,6 +6,32 @@ Production-style API for [Stripe Global Payouts](https://docs.stripe.com/global-
 
 > Portfolio project demonstrating Stripe preview APIs, webhook idempotency, and the Global Payouts vs Connect architecture choice.
 
+<!-- chunhuduc.com:showcase:start -->
+```yaml
+summary: "Production-style API for Stripe Global Payouts: stores freelancer bank details as recipients and payout methods, moves money via Outbound Payments (v2), with idempotent webhook processing and a country-rail registry."
+tags: [Stripe, Node.js, TypeScript, Express, Neon, Webhooks]
+demoUrl: https://aaron-stripe-payout-api.vercel.app
+outcome: "Pays international freelancers without onboarding them as Stripe Connect accounts."
+complexityScore: 5
+motif: { from: "#16a34a", to: "#65a30d", icon: automation }
+architecture:
+  from: "#16a34a"
+  to: "#65a30d"
+  nodes:
+    - { id: admin, label: "Admin client", x: 18, y: 14 }
+    - { id: api, label: "Express API", x: 50, y: 14, kind: primary }
+    - { id: db, label: "Neon Postgres", x: 50, y: 50, kind: store }
+    - { id: stripe, label: "Stripe Global Payouts", x: 82, y: 30 }
+    - { id: webhook, label: "Webhook + dedupe", x: 18, y: 50 }
+  edges:
+    - { from: admin, to: api, flow: true }
+    - { from: api, to: db, flow: true }
+    - { from: api, to: stripe, flow: true }
+    - { from: stripe, to: webhook, flow: true, curve: -4 }
+    - { from: webhook, to: db, curve: 4 }
+```
+<!-- chunhuduc.com:showcase:end -->
+
 ---
 
 ## The problem
